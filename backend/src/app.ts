@@ -15,6 +15,7 @@ import signInOut from "./features/sign/sign-in-out.controller";
 import signUp from "./features/sign/sign-up.controller";
 import auth from "./features/auth/auth.controller";
 import { sessionMiddleware } from "./global/auth/sessions/middleware";
+import usersRoute from "./features/users/users.controller";
 
 const appSettingsPath = process.cwd() + "/src/settings.yml"
 const app = express();
@@ -68,6 +69,7 @@ app.use((req, res, next) => {
 
 app.use('/auth', sessionMiddleware, auth);
 app.use('/sign', signInOut, signUp);
+app.use('/users', usersRoute)
 
 app.listen(3000, async () => {
     await cronJobs.loadTasks();

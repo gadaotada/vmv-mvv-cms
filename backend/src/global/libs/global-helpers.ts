@@ -6,7 +6,7 @@ import type { AppLogger } from '../logging';
 
 export function validateSchema(schema: Schema, data: any): boolean {
     try {
-        schema.validateSync(data, { abortEarly: false });
+        schema.validateSync(data, { abortEarly: false, stripUnknown: false });
         return true;
     } catch (error) {
         return false;

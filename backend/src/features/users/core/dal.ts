@@ -1,10 +1,8 @@
 import { DTO, pool } from "../../../global/database";
 
-export async function getAllUsers(email: string) {
+export async function getUsers(query: string, values: any) {
     const connection = await pool.getConnection();
     try {
-        const query = 'SELECT id, name, active, email FROM users';
-        const values = [email];
         const result = await new DTO({query, values, connection}).query();
         return result;
     } finally {

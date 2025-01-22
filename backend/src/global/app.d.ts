@@ -13,4 +13,8 @@ declare namespace Express {
         file?: Express.Multer.File;
         files?: Express.Multer.File[];
     }
+
+    interface ParsedQs {
+        [key: string]: undefined | string | string[] | ParsedQs | ParsedQs[];
+    }
 }
