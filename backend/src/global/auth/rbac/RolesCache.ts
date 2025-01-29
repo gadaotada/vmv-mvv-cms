@@ -31,14 +31,14 @@ export default class RoleCache {
     }
 
     public set(userId: string, roles: Auth.Role[]): void {
-        this.cache.set(userId, {
+        this.cache.set(String(userId), {
             roles,
             timestamp: Date.now()
         });
     }
 
     public get(userId: string): Auth.Role[] | null {
-        const cached = this.cache.get(userId);
+        const cached = this.cache.get(String(userId));
         if (!cached) return null;
 
         // Check if cache is still valid

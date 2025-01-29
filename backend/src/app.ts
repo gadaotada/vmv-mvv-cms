@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { WebSocketServer, WebSocket } from 'ws';
 
 import { LocalStorageStrategy } from './global/libs/upload';
 import { ConfigManager } from "./global/config/ConfigManager"
@@ -8,6 +9,7 @@ import { AppLogger } from "./global/logging";
 import { JobsManager } from "./global/libs/jobs";
 import { EmailManager } from "./global/libs/mails";
 import { RBACManager } from "./global/auth/";
+import { RateLimiter } from "./global/ratelimiter/RateLimiter";
 import { APP_DEFAUTLT_ROLES } from "./global/config/constants";
 import { pool } from "./global/database";
 import { SessionManager } from "./global/auth";
@@ -16,6 +18,7 @@ import signUp from "./features/sign/sign-up.controller";
 import auth from "./features/auth/auth.controller";
 import { sessionMiddleware } from "./global/auth/sessions/middleware";
 import usersRoute from "./features/users/users.controller";
+import monitoringRoute from "./features/monitor";
 
 const appSettingsPath = process.cwd() + "/src/settings.yml"
 const app = express();
@@ -25,7 +28,7 @@ const config = ConfigManager.getInstance(appSettingsPath);
 // Initialize Auth and RBAC systems
 export const sessionManager = SessionManager.getInstance(config.get("auth"));
 export const rbac = RBACManager.getInstance(APP_DEFAUTLT_ROLES, pool);
-
+export const rateLimiter = new RateLimiter();
 export const logger = AppLogger.createInstance(config.get("logging"));
 export const storage = new LocalStorageStrategy(config.get("upload"), logger);
 export const cronJobs = JobsManager.getInstance(logger, config.get("cron"));
@@ -38,9 +41,10 @@ app.set('rbac', rbac);
 app.set('storage', storage);
 app.set('logger', logger);
 app.set('mail', mailSys);
+app.set('rateLimiter', rateLimiter);
 
 app.use(cors({
-    origin: "http://localhost:4000",
+    origin: "http://localhost:5173",
     credentials: true
 }));
 app.use(cookieParser());
@@ -67,9 +71,10 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/auth', sessionMiddleware, auth);
+app.use('/auth', async (req, res, next) => await sessionMiddleware(req, res, next, false), auth);
 app.use('/sign', signInOut, signUp);
-app.use('/users', usersRoute)
+app.use('/users', usersRoute);
+app.use('/monitor', async (req, res, next) => await sessionMiddleware(req, res, next, false), monitoringRoute);
 
 app.listen(3000, async () => {
     await cronJobs.loadTasks();

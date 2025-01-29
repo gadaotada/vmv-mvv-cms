@@ -25,7 +25,7 @@ const permissionCheck = (permission: Auth.Permission | null, handler: RouteHandl
 
             const results = await Promise.all(permissionChecks);
             const hasPermission = results.some(result => result === true);
-
+            
             if (!hasPermission) {
                 res.status(403).json({message: "Forbidden"});
                 return;

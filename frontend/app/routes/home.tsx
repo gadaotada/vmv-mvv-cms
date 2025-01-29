@@ -1,5 +1,7 @@
+import { useAuth } from "~/providers/AuthProvider";
 import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+import Login from "~/features/sign/login";
+import { Navigate } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -9,5 +11,11 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
-  return <Welcome />;
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <div className="w-full h-full flex justify-center items-center pt-10">
+    <Login />
+  </div>
 }

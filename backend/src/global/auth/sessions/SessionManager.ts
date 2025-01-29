@@ -1,7 +1,6 @@
 import { randomBytes } from 'crypto';
 
 import { generateAccessToken, decodeAccessToken } from './helper';
-import { RateLimiter } from './RateLimiter';
 import { DTO, pool } from '../../database';
 import { AppError } from '../../errors';
 import type { CustomError } from '../../errors/';
@@ -10,11 +9,9 @@ export class SessionManager {
     private static instance: SessionManager | null = null;
     private config: Auth.AuthConfig;
     private sessionCache: Map<string, Auth.Session> = new Map();
-    public rateLimiter: RateLimiter;
 
     constructor(config: Auth.AuthConfig) {
         this.config = config;
-        this.rateLimiter = new RateLimiter();
         setInterval(() => this.cleanupCache(), this.config.cacheCleanupInterval * 60 * 60 * 1000);
     }
 
@@ -34,14 +31,6 @@ export class SessionManager {
     }
 
     public async createSession(userId: string): Promise<AppTypes.Result<Auth.Session, CustomError>> {
-        if (!this.rateLimiter.checkLimit(`login:${userId}`)) {
-            return [null, AppError.create('Too many login attempts', {
-                type: "Auth",
-                code: "RATE_LIMIT_EXCEEDED",
-                severity: "Low"
-            })];
-        }
-
         const sessionId = randomBytes(32).toString('hex');
         const accessToken = generateAccessToken(userId, sessionId, (this.config.tokenExpiration + "m"), this.config.tokenAlgorithm);
 
@@ -109,10 +98,6 @@ export class SessionManager {
     }
     // add custom errors in order to preform different actions based on the validation result specially for rate limit exceeded
     public async validateSession(token: string): Promise<Auth.Session | null> {
-        if (!this.rateLimiter.checkLimit(`validate:${token}`)) {
-            return null;
-        }
-
         const session = decodeAccessToken(token);
         if (!session) {
             return null;

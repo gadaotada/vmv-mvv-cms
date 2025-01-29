@@ -2,8 +2,9 @@ import { NextFunction, Request, Response } from "express";
 import type { SessionManager } from "./SessionManager";
 import { DTO, pool } from "../../database";
 import { rolesCache } from "../rbac/RolesCache";
+import { RateLimiter } from "../../ratelimiter/RateLimiter";
 
-async function getUserRoles(userId: number | string) {
+export async function getUserRoles(userId: number | string) {
     // check cache
     const cachedRoles = rolesCache.get(String(userId));
     if (cachedRoles) {
@@ -26,13 +27,21 @@ async function getUserRoles(userId: number | string) {
     return {...result, cacheMiss: true}
 }
 
-export async function sessionMiddleware(req: Request, res: Response, next: NextFunction) {
+export async function sessionMiddleware(req: Request, res: Response, next: NextFunction, shouldCheckRateLimit: boolean = true) {
     const token = req.cookies['auth-at-app'];
     if (!token) {
         res.status(401).json({message: "Unauthorized"});
         return;
     }
     const sessionManager = req.app.get('sessionManager') as SessionManager;
+    const rateLimiter = req.app.get('rateLimiter') as RateLimiter;
+
+    if (shouldCheckRateLimit) {
+        if (!rateLimiter.checkLimit(`validate:${token}`)) {
+            res.status(401).json({message: "Unauthorized"});
+            return;
+        }
+    }
 
     const session = await sessionManager.validateSession(token);
 
@@ -54,9 +63,9 @@ export async function sessionMiddleware(req: Request, res: Response, next: NextF
             id: session.userId,
             roles: roles
         };
-
         if (userRoles.cacheMiss) {
             rolesCache.set(session.userId, roles);
+
         }
 
     } else {

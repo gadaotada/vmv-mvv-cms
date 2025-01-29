@@ -107,6 +107,7 @@ export class RBACManager {
 
             return [newRole.id, null];
         } finally {
+            console.log("Releasing connection for role creation");
             connection.release();
         }
     }
@@ -158,6 +159,7 @@ export class RBACManager {
 
             return [true, null];
         } finally {
+            console.log("Releasing connection for role update");
             connection.release();
         }
     }
@@ -186,6 +188,7 @@ export class RBACManager {
 
             return [true, null];
         } finally {
+            console.log("Releasing connection for role deletion");
             connection.release();
         }
     }

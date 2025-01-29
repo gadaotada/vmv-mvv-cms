@@ -123,6 +123,7 @@ export async function getUserById(userId: string) {
         const result = await new DTO({query, values, connection}).query();
         return result;
     } finally {
+        console.log("releasing connection")
         connection.release();
     }
 }
